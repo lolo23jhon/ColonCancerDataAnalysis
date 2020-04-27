@@ -8,7 +8,64 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 
 ```{r}
-plot(cars)
+rm(list=ls());
+cat('\f');
+
+remove(list = ls());
+options(stringAsFactors = FALSE);
+```
+
+```{r}
+library(tidyverse); # Para heatmap().
+```
+
+```{r}
+# Función para cálculo de diferencia de prueba t student.
+t_student_diff <- function(df, index_list_a, index_list_b, col_names =  c("Tumor", "Normal", "Diff")) {
+  res <- t(apply(df, 1, 
+      function(x) {
+        m_1 <- mean(x[index_list_a], na.rm = TRUE);
+        m_2 <- mean(x[index_list_b], na.rm = TRUE);
+        m_diff <- abs(m_1 - m_2);
+        c(m_1, m_2, m_diff);
+      }));
+  colnames(res) <- col_names;
+  return(res);
+};
+
+# Regresa un dataframe con los primeros n resultados ordenados por la columna col.
+get_top_n <- function(df, col, n, decreasing = FALSE){
+  return(head(df[order(col, decreasing=decreasing),],n));
+};
+
+```
+
+
+```{r}
+  load("Multi_Cancer_Data.Rdata");
+  df <- multi_cancer_data;
+  rm(multi_cancer_data);
+
+  print(head(df, 1));
+```
+
+## Diferenia entre muestras normales y muestras de cáncer color
+
+```{r}
+# Selección de muestras normales.
+normal_samples_indexes <- grep("Normal", colnames(df));
+print(normal_samples_indexes);
+
+# Selección de muestras de cáncer colorrectal.
+colorectal_cancer_indexes <- grep("Tumor__Colorectal", colnames(df));
+print(colorectal_cancer_indexes);
+
+# Prueba t student.
+tstudent_normal_with_colorectal <- data.frame(t_student_diff(df, normal_samples_indexes, colorectal_cancer_indexes,));
+
+tstudent_normal_with_colorectal_top10 <- get_top_n();
+
+
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
