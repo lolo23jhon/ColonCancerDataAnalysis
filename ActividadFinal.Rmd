@@ -1,6 +1,11 @@
 ---
-title: "Actividad Final"
-output: pdf_notebook
+title: "Actividad Integradora"
+author: "Bruno Yánez, Javier Lizárraga, Maximiliano Martínez, Pedro Escoboza"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
 
 ```{r}
@@ -10,34 +15,34 @@ options(stringAsFactors = FALSE);
 
 ```{r}
 library("gplots"); # heatmap.2()
-
 ```
 
 ```{r}
 # Función para cálculo de diferencia de prueba t student.
 t_student_diff <- function(df, index_list_a, index_list_b, col_names =  c("Tumor", "Normal", "Diff")) {
   res <- t(apply(df, 1, 
-      function(x) {
-        m_1 <- mean(x[index_list_a], na.rm = TRUE);
-        m_2 <- mean(x[index_list_b], na.rm = TRUE);
-        m_diff <- abs(m_1 - m_2);
-        c(m_1, m_2, m_diff);
-      }));
+                 function(x) {
+                   m_1 <- mean(x[index_list_a], na.rm = TRUE);
+                   m_2 <- mean(x[index_list_b], na.rm = TRUE);
+                   m_diff <- abs(m_1 - m_2);
+                   c(m_1, m_2, m_diff);
+                 }));
   colnames(res) <- col_names;
   return(res);
 };
 
 # Función para cálculo de diferencia de prueba t student para dataframes con esquema de clases.
-t_student_classes <- function(df, classes, cr_a, cr_b, col_names = c("A", "B", "p_value", "fold_change")){
+t_student_classes <- function(df, classes, cr_a, cr_b, 
+                              col_names = c("A", "B", "p_value", "fold_change")){
   samples_a <- which(classes == cr_a);
   samples_b <- which(classes == cr_b);  
   t_res <- t(apply(df, 1, 
-          function(x){
-            t_test <- t.test(x[samples_a], x[samples_b]);
-            c(t_test$estimate[1], t_test$estimate[2], t_test$p.value, t_test$estimate[1] - t_test$estimate[2]);
-          }));
-    colnames(t_res) <- col_names;
-    return(t_res);
+                   function(x){
+                     t_test <- t.test(x[samples_a], x[samples_b]);
+                     c(t_test$estimate[1], t_test$estimate[2], t_test$p.value, t_test$estimate[1] - t_test$estimate[2]);
+                   }));
+  colnames(t_res) <- col_names;
+  return(t_res);
 };
 
 # Regresa un dataframe con los primeros n resultados ordenados por la columna col.
@@ -54,11 +59,9 @@ normalize <- function(x, min, max){
 ## Análisis de Multi_Cancer_Data
 
 ```{r}
-  load("Multi_Cancer_Data.Rdata");
-  df <- multi_cancer_data;
-  rm(multi_cancer_data);
-
-  print(head(df, 1));
+load("Multi_Cancer_Data.Rdata");
+df <- multi_cancer_data;
+rm(multi_cancer_data);
 ```
 
 ### Diferenia entre muestras normales y muestras de cáncer color
@@ -124,16 +127,17 @@ hm_mat[,1] <- normalize(hm_mat[,1], min_exp_values, max_exp_values);
 hm_mat[,2] <- normalize(hm_mat[,2], min_exp_values, max_exp_values);
 
 
-num_colors = 256;
+num_colors = 128;
 ```
 
+### Mapa de calor
 
 ```{r}
 # Construcción de mapa de calor.
 colors_h <- colorRampPalette(c("darkblue","red"))(num_colors);
 h_breaks <- seq(from=0, to=1, length=num_colors+1);
 
-heatmap.2(hm_mat, col=colors_h, trace="none", breaks=h_breaks);
+heatmap.2(hm_mat, col=colors_h, trace="none", breaks=h_breaks, cexCol=1,  );
 ```
 
 
