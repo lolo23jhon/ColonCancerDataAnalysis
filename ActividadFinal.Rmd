@@ -63,9 +63,10 @@ print(colorectal_cancer_indexes);
 # Prueba t student.
 tstudent_normal_with_colorectal <- data.frame(t_student_diff(df, normal_samples_indexes, colorectal_cancer_indexes,));
 
-tstudent_normal_with_colorectal_top10 <- get_top_n();
+# Seleccionar 10 entradas con mayor diferencia.
+tstudent_normal_with_colorectal <- get_top_n(tstudent_normal_with_colorectal, tstudent_normal_with_colorectal$Diff, 10, decreasing=TRUE);
 
-
+print(tstudent_normal_with_colorectal);
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
