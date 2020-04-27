@@ -97,11 +97,25 @@ tcga_t_test_filter <- apply(tcga_t_test[,1:2],1,function(x){all(x<1)});
 tcga_t_test <- tcga_t_test[-which(tcga_t_test_filter),];
 
 # Ordenar por Fold Change.
-tcga_t_test <- tcga_t_test[order(tcga_t_test[,4]),];
+tcga_t_test <- tcga_t_test[order(tcga_t_test[,4], decreasing=TRUE),];
 
 # Genes con mayor expresión
 print("# Genes con mayor expresión");
 write.table(rownames(tcga_t_test[which(tcga_t_test[,4] > 0),])[1:20], sep='\t', quote=F, row.names=F, col.names=F);
+
+```
+```{r}
+# Normalización de genes seleccionados.
+selected_genes <- rownames(tcga_t_test)[1:20];
+aux_mat <- tcga_t_test[selected_genes,];
+aux_mat <- t(apply(aux_mat, 1, scale));
+colnames(aux_mat) <- colnames(df);
+
+# Construcción de mapa de calor.
+colors_h <- colorRampPalette(c("darkBlue", "white", "darkred"))(16);
+h_breaks <- seq(from=-2, to=2, length = 17);
+
+heatmap.2(aux_mat, col=colors_h, trace="none", breaks=h_breaks);
 
 ```
 
