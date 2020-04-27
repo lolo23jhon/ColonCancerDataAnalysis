@@ -45,6 +45,10 @@ get_top_n <- function(df, col, n, decreasing = FALSE){
   return(head(df[order(col, decreasing=decreasing),],n));
 };
 
+# Normalización de datos.
+normalize <- function(x, min, max){
+  return((x-min)/(max-min));
+};
 ```
 
 ## Análisis de Multi_Cancer_Data
@@ -104,21 +108,32 @@ print("# Genes con mayor diferencia de expresión entre jóvenes y ancianos:");
 write.table(rownames(tcga_t_test[which(tcga_t_test[,4] > 0),])[1:20], sep='\t', quote=F, row.names=F, col.names=F);
 ```
 ```{r}
-# Normalización de genes seleccionados.
-selected_genes <- rownames(tcga_t_test)[1:20];
-aux_mat <- tcga_t_test[selected_genes,];
-aux_mat <- t(apply(aux_mat, 1, scale));
-colnames(aux_mat) <- colnames(tcga_t_test);
-aux_mat <- aux_mat[,-(3:4),drop=FALSE];
+# Generar matriz para mapa de calor.
+hm_mat <- tcga_t_test[rownames(tcga_t_test)[1:20],];
 
-num_colors = 128;
+# Remover columnas de p_value y fold_change.
+hm_mat <- hm_mat[,-(3:4),drop=FALSE];
+colnames(hm_mat) <- colnames(tcga_t_test)[1:2];
+
+# Normalizar valores de expresión.
+exp_values <- c(hm_mat[,1], hm_mat[,2]);
+min_exp_values <- min(exp_values);
+max_exp_values <- max(exp_values);
+
+hm_mat[,1] <- normalize(hm_mat[,1], min_exp_values, max_exp_values);
+hm_mat[,2] <- normalize(hm_mat[,2], min_exp_values, max_exp_values);
 
 
+num_colors = 256;
+```
+
+
+```{r}
 # Construcción de mapa de calor.
-colors_h <- colorRampPalette(c("darkBlue", "white", "darkred"))(num_colors);
-h_breaks <- seq(from=-2, to=2, length=num_colors+1);
+colors_h <- colorRampPalette(c("darkblue","red"))(num_colors);
+h_breaks <- seq(from=0, to=1, length=num_colors+1);
 
-heatmap.2(aux_mat, col=colors_h, trace="none", breaks=h_breaks);
+heatmap.2(hm_mat, col=colors_h, trace="none", breaks=h_breaks);
 ```
 
 
