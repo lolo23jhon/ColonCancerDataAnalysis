@@ -3,20 +3,14 @@ title: "Actividad Final"
 output: pdf_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
 ```{r}
 rm(list=ls());
-cat('\f');
-
-remove(list = ls());
 options(stringAsFactors = FALSE);
 ```
 
 ```{r}
-library(tidyverse); # Para heatmap().
+library("gplots"); # heatmap.2()
+
 ```
 
 ```{r}
@@ -33,6 +27,19 @@ t_student_diff <- function(df, index_list_a, index_list_b, col_names =  c("Tumor
   return(res);
 };
 
+# Función para cálculo de diferencia de prueba t student para dataframes con esquema de clases.
+t_student_classes <- function(df, classes, cr_a, cr_b, col_names = c("A", "B", "p_value", "Fold-Change")){
+  samples_a <- which(classes == cr_a);
+  samples_b <- which(classes == cr_b);  
+  t_res <- t(apply(df, 1, 
+          function(x){
+            t_test <- t.test(x[samples_a], x[samples_b]);
+            c(t_test$estimate[1], t_test$estimate[2], t_test$p.value, t_test$estimate[1] - t_test$estimate[2]);
+          }));
+    colnames(t_res) <- col_names;
+    return(t_res);
+};
+
 # Regresa un dataframe con los primeros n resultados ordenados por la columna col.
 get_top_n <- function(df, col, n, decreasing = FALSE){
   return(head(df[order(col, decreasing=decreasing),],n));
@@ -40,6 +47,7 @@ get_top_n <- function(df, col, n, decreasing = FALSE){
 
 ```
 
+## Análisis de Multi_Cancer_Data
 
 ```{r}
   load("Multi_Cancer_Data.Rdata");
@@ -49,7 +57,7 @@ get_top_n <- function(df, col, n, decreasing = FALSE){
   print(head(df, 1));
 ```
 
-## Diferenia entre muestras normales y muestras de cáncer color
+### Diferenia entre muestras normales y muestras de cáncer color
 
 ```{r}
 # Selección de muestras normales.
@@ -69,8 +77,32 @@ tstudent_normal_with_colorectal <- get_top_n(tstudent_normal_with_colorectal, ts
 print(tstudent_normal_with_colorectal);
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+## Análisis de TCGA_COADREAD_comp_data
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+```{r}
+rm(list=setdiff(ls(), lsf.str()));
+load("TCGA_COADREAD_comp_data.RData");
+df <- tcga_coadread;
+rm(tcga_coadread);
+```
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+### Diferencia entre jóvenes y adultos
+
+```{r}
+
+# Prueba de t student para TCGA COARDREAD por las clases Young  y Old.
+tcga_t_test <- t_student_classes(df,tcga_coadread_class,"Young","Old",c("Young", "Old", "p_value", "Fold-Change"));
+
+# Filtración de datos para eliminar entradas no significativas.
+tcga_t_test_filter <- apply(tcga_t_test[,1:2],1,function(x){all(x<1)});
+tcga_t_test <- tcga_t_test[-which(tcga_t_test_filter),];
+
+# Ordenar datos por valor p.
+tcga_t_test <- tcga_t_test[order(tcga_t_test[,3]),];
+
+
+
+
+```
+
+
