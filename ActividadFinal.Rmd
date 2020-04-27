@@ -89,7 +89,6 @@ rm(tcga_coadread);
 ### Diferencia entre jóvenes y adultos
 
 ```{r}
-
 # Prueba de t student para TCGA COARDREAD por las clases Young  y Old.
 tcga_t_test <- t_student_classes(df,tcga_coadread_class,"Young","Old",c("Young", "Old", "p_value", "Fold-Change"));
 
@@ -97,11 +96,12 @@ tcga_t_test <- t_student_classes(df,tcga_coadread_class,"Young","Old",c("Young",
 tcga_t_test_filter <- apply(tcga_t_test[,1:2],1,function(x){all(x<1)});
 tcga_t_test <- tcga_t_test[-which(tcga_t_test_filter),];
 
-# Ordenar datos por valor p.
-tcga_t_test <- tcga_t_test[order(tcga_t_test[,3]),];
+# Ordenar por Fold Change.
+tcga_t_test <- tcga_t_test[order(tcga_t_test[,4]),];
 
-
-
+# Genes con mayor expresión
+print("# Genes con mayor expresión");
+write.table(rownames(tcga_t_test[which(tcga_t_test[,4] > 0),])[1:20], sep='\t', quote=F, row.names=F, col.names=F);
 
 ```
 
