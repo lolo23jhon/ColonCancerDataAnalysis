@@ -28,7 +28,7 @@ t_student_diff <- function(df, index_list_a, index_list_b, col_names =  c("Tumor
 };
 
 # Función para cálculo de diferencia de prueba t student para dataframes con esquema de clases.
-t_student_classes <- function(df, classes, cr_a, cr_b, col_names = c("A", "B", "p_value", "Fold-Change")){
+t_student_classes <- function(df, classes, cr_a, cr_b, col_names = c("A", "B", "p_value", "fold_change")){
   samples_a <- which(classes == cr_a);
   samples_b <- which(classes == cr_b);  
   t_res <- t(apply(df, 1, 
@@ -96,27 +96,29 @@ tcga_t_test <- t_student_classes(df,tcga_coadread_class,"Young","Old",c("Young",
 tcga_t_test_filter <- apply(tcga_t_test[,1:2],1,function(x){all(x<1)});
 tcga_t_test <- tcga_t_test[-which(tcga_t_test_filter),];
 
-# Ordenar por Fold Change.
+# Ordenar por diferencia.
 tcga_t_test <- tcga_t_test[order(tcga_t_test[,4], decreasing=TRUE),];
 
-# Genes con mayor expresión
-print("# Genes con mayor expresión");
+# Genes con mayor diferencia de expresión entre jóvenes y ancianos.
+print("# Genes con mayor diferencia de expresión entre jóvenes y ancianos:");
 write.table(rownames(tcga_t_test[which(tcga_t_test[,4] > 0),])[1:20], sep='\t', quote=F, row.names=F, col.names=F);
-
 ```
 ```{r}
 # Normalización de genes seleccionados.
 selected_genes <- rownames(tcga_t_test)[1:20];
 aux_mat <- tcga_t_test[selected_genes,];
 aux_mat <- t(apply(aux_mat, 1, scale));
-colnames(aux_mat) <- colnames(df);
+colnames(aux_mat) <- colnames(tcga_t_test);
+aux_mat <- aux_mat[,-(3:4),drop=FALSE];
+
+num_colors = 128;
+
 
 # Construcción de mapa de calor.
-colors_h <- colorRampPalette(c("darkBlue", "white", "darkred"))(16);
-h_breaks <- seq(from=-2, to=2, length = 17);
+colors_h <- colorRampPalette(c("darkBlue", "white", "darkred"))(num_colors);
+h_breaks <- seq(from=-2, to=2, length=num_colors+1);
 
 heatmap.2(aux_mat, col=colors_h, trace="none", breaks=h_breaks);
-
 ```
 
 
