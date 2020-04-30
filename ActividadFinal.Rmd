@@ -15,6 +15,9 @@ options(stringAsFactors = FALSE);
 
 ```{r}
 library("gplots"); # heatmap.2()
+library("NLP")
+library("RISmed");
+library("tm");
 ```
 
 ```{r}
@@ -176,5 +179,110 @@ state_freq <- as.data.frame(table(colon_cancer$ESTADO));
 state_freq <- state_freq[which(state_freq$Freq != 0),];
 state_freq <- state_freq[order(state_freq$Freq, decreasing=TRUE),];
 barplot(state_freq$Freq, main="Cáncer de colon por estado", xlab="Estado", names.arg=state_freq$Var1, cex.names=0.5,las=2 );
+```
+
+## Búsqueda de artículos relacionados en PubMed
+
+```{r}
+
+# Correr la opción paraque no se lean los strings como factores.
+options(stringsAsFactors = F)
+
+# Creamos un query para buscar artículos en PUBMED desde R. Usando los operadores
+# lógicos AND y OR y la opción TitleAbstract.
+
+query_colon <- "\"colon\"[TIAB] AND \"cancer\"[TIAB] AND \"young\"[TIAB] AND
+(\"mutation\"[TIAB] OR \"alteration\"[TIAB] OR \"treatment\"[TIAB] OR
+\"hereditary\"[TIAB])"
+#usamos la opción EUtilsSummary de RISmed
+
+search_query <- EUtilsSummary(query_colon)
+summary(search_query)
+
+#Después, obtenemos un data frame con el título, abstract y ID de los artículos.
+records <- EUtilsGet(search_query)
+pubmed_data <- data.frame('Title' = ArticleTitle(records), 'Abstract' =
+AbstractText(records), 'PID' = ArticleId(records))
+pubmed_data [1:3,c("Title","PID")]
+
+#Quitamos caracteres (. : , ; [ ]) del título y el abstract.
+pubmed_data$Title <- gsub(pattern = "//.|:|,|;|//[|//]", replacement = "",
+pubmed_data$Title)
+pubmed_data$Abstract <- gsub(pattern = "//.|:|,|;|//[|//]", replacement = "",
+pubmed_data$Abstract)
+
+#Convertimos todo a minúsculas
+pubmed_data$Title <- tolower(pubmed_data$Title)
+pubmed_data$Abstract <- tolower(pubmed_data$Abstract)
+pubmed_data$Title[1:3]
+
+#usamos la función strsplit y unlist para obtener las palabras contenidas en el abstract.
+unlist(strsplit(pubmed_data$Abstract[1], " "))[1:10]
+
+#Hay algunos artículos que pudieran no incluir el abstract
+which(pubmed_data$Abstract == "")
+
+#Creamos el vector sobre el cuál vamos a iterar:
+word_list <- c()
+
+#El bucle para todos los abstracts
+for (i in 1:length(pubmed_data$Abstract)){
+  #Obtenemos las palabras como vector
+  aux_word <- unlist(strsplit(pubmed_data$Abstract[i], " "))
+  
+  #eliminamos abstracts vacíos con la condicionante "if"
+  if (length(aux_word) > 0){
+    #Concatenamos las palabras y el ID. Con c bind recuperamos en una columna los IDs en
+    # donde se encuentran las palabras y los concatenamos con la columna aux_word.
+    aux_list <- cbind(pubmed_data$PID[i], aux_word)
+    #Pegamos este data frame en el vector inicial con row bind.
+    word_list <- rbind(word_list, aux_list)
+  
+}
+
+}
+
+colnames(word_list) <- c("PID","Word")
+ncol(word_list)
+nrow(word_list)
+dim(word_list)
+word_list[1:5,]
+head(word_list)
+
+#Usamos la libreria tm para obtener la lista de "stopwords(palabras vacías)" (articulos,
+#adverbios, pronombres, conjunciones)
+library(tm)
+stop_words <- stopwords(kind = "en")
+stop_words
+
+#guardamos los índices de las palabras de nuestra lista que corresponden a stopwords y
+#que deben ser removidas
+index_stop_word <- which(word_list[,2] %in% stop_words)
+length(index_stop_word)
+dim(word_list)
+word_list <- word_list[-index_stop_word,]
+dim(word_list)
+head(word_list)
+
+#Ahora podemos ver el top10 de las palabras mas frecuentes
+sort(table(word_list[,2]), decreasing = T) [1:10]
+
+word_df <- data.frame(PID=as.numeric(word_list[,1]), Word=word_list[,2],
+PIDWord=as.character(apply(word_list, 1, paste, collapse="_")))
+word_df[1:5,]
+dup_index <- duplicated(word_df$PIDWord)
+word_df$PIDWord[1:30]
+length(which(dup_index))
+dim(word_df)
+word_df <- word_df[-which(dup_index),]
+dim(word_df)
+
+#volvemos a ver el top de las palabras mas frecuentes
+sort(table(word_df[,2]), decreasing = T) [1:5]
+
+#ordenamos el data frame por ID en orden decreciente para tener los artículos más
+#recientes
+word_df <- word_df[order(word_df$PID, decreasing=T),]
+print(word_df[1:40,]);
 
 ```
